@@ -187,11 +187,7 @@ func (m Model) View() string {
 		displayCmd = "No command returned — press [e] to refine or [esc] to dismiss"
 	}
 
-	width := m.termWidth - 4
-	if width < 20 {
-		width = 20
-	}
-	sb.WriteString(boxStyle.Width(width).Render(displayCmd))
+	sb.WriteString(boxStyle.Render(displayCmd))
 	sb.WriteString("\n")
 
 	if m.errMsg != "" {

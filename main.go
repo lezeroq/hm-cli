@@ -94,11 +94,9 @@ func run(args []string) error {
 	}
 
 	// Pre-TUI progress indicator on stderr
-	fmt.Fprint(os.Stderr, "\rThinking...")
+	fmt.Fprintln(os.Stderr, "Thinking...")
 
 	result, callErr := claude.New(cfg.SystemPrompt, sessionID, nil).Ask(query)
-	// Clear the spinner line
-	fmt.Fprint(os.Stderr, "\r\033[K")
 
 	if callErr != nil {
 		if sessionID != "" {
