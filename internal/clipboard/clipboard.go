@@ -8,12 +8,15 @@ import (
 )
 
 // Copy runs cmd via "sh -c <cmd>" with text piped to stdin.
-// Returns an error if the command exits non-zero or cannot be started.
+// The process is started and left running in the background — clipboard tools
+// like xclip stay alive until another app pastes, so we must not wait for exit.
+// Returns an error only if the command fails to start.
 func Copy(cmd, text string) error {
 	c := exec.Command("sh", "-c", cmd)
 	c.Stdin = strings.NewReader(text)
-	if out, err := c.CombinedOutput(); err != nil {
-		return fmt.Errorf("%w: %s", err, strings.TrimSpace(string(out)))
+	if err := c.Start(); err != nil {
+		return fmt.Errorf("clipboard command failed to start: %w", err)
 	}
+	go c.Wait() // reap the process when it eventually exits
 	return nil
 }

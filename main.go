@@ -139,7 +139,7 @@ func run(args []string) error {
 
 	// Launch Bubble Tea TUI
 	m := ui.New(result.Command, askFn)
-	p := tea.NewProgram(m)
+	p := tea.NewProgram(m, tea.WithAltScreen())
 	finalModel, err := p.Run()
 	if err != nil {
 		return fmt.Errorf("TUI error: %w", err)
