@@ -78,7 +78,7 @@ func run(args []string) error {
 			fmt.Fprintf(os.Stderr, "hm: warning: could not clear session ID: %v\n", err)
 		}
 		if query == "" {
-			fmt.Println("Session cleared.")
+			fmt.Fprintln(os.Stderr, "Session cleared.")
 			return nil
 		}
 	}
