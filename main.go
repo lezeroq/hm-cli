@@ -139,7 +139,7 @@ func run(args []string) error {
 
 	// Launch Bubble Tea TUI
 	m := ui.New(result.Command, askFn)
-	p := tea.NewProgram(m, tea.WithAltScreen())
+	p := tea.NewProgram(m)
 	finalModel, err := p.Run()
 	if err != nil {
 		return fmt.Errorf("TUI error: %w", err)
@@ -147,9 +147,6 @@ func run(args []string) error {
 
 	final := finalModel.(ui.Model)
 	cmd := final.Command()
-
-	// Always print command to stdout for scrollback visibility
-	fmt.Println(cmd)
 
 	// Copy to clipboard if user pressed Enter
 	if final.ShouldCopy() && strings.TrimSpace(cmd) != "" {
