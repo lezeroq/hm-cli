@@ -3,12 +3,11 @@
 A small Linux terminal helper that turns natural language into shell commands.
 Type what you want, get a command, copy it to clipboard.
 
-Built for personal convenience — I use i3/sway and spend most of my time in
+Built for personal convenience - I use i3/sway and spend most of my time in
 terminals. I didn't want to switch context or open a browser just to look up a
-command. Inspired by [tldr](https://tldr.sh): quick, to the point, stays in the
-terminal.
+command. Inspired by [tldr](https://tldr.sh).
 
-Built with the help of Claude. Nothing unique here — it just shells out to the
+Built with the help of Claude. `hm` just shells out to the
 [Claude Code CLI](https://claude.ai/code) and reuses your existing subscription.
 Each query is a message in a persistent Claude session, so follow-up questions
 have context from previous ones.
