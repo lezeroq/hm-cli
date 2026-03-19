@@ -31,14 +31,22 @@ Options:
   --help, -h         Show this help
 `
 
-const examples = `hm examples:
+const examples = `hm — natural language to shell command
 
-  hm "get pods from all namespaces sorted by age"
-  hm "find files larger than 100MB in /var"
-  hm -c "that included hidden files, exclude them"   # refine last command
-  hm -q "list docker images sorted by size"          # no TUI, straight to clipboard
-  hm --refresh "list kubernetes contexts"            # start a fresh session
-  hmq "tar the current directory"                    # alias for hm -q
+- Ask for a command:
+    hm "get pods from all namespaces sorted by age"
+
+- Refine the previous result with feedback:
+    hm -c "that included hidden files, exclude them"
+
+- Skip the TUI, copy straight to clipboard and print:
+    hm -q "list docker images sorted by size"
+
+- Same as above via the short alias:
+    hmq "tar the current directory"
+
+- Start a fresh Claude session:
+    hm --refresh "list kubernetes contexts"
 `
 
 func main() {
