@@ -21,6 +21,7 @@ var version = "dev"
 const usage = `Usage: hm "<query>"
 
 Options:
+  --continue, -c     Continue from the last command with feedback
   --refresh          Clear the Claude session (optionally followed by a query)
   --no-session       Run without session persistence
   --version          Print version and exit
@@ -28,6 +29,7 @@ Options:
 
 Examples:
   hm "get pods from all namespaces sorted by creation time"
+  hm -c "that showed pods with GPU, I only want CPU pods"
   hm --refresh "list kubernetes contexts"
   hm --no-session "find files larger than 100MB"
 `
@@ -40,16 +42,12 @@ func main() {
 }
 
 func run(args []string) error {
-	if len(args) == 0 {
-		fmt.Fprint(os.Stderr, usage)
-		os.Exit(1)
-	}
-
 	var doRefresh, noSession bool
 	var queryParts []string
+	var continueMsg string
 
-	for _, a := range args {
-		switch a {
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
 		case "--refresh":
 			doRefresh = true
 		case "--no-session":
@@ -60,8 +58,13 @@ func run(args []string) error {
 		case "--help", "-h":
 			fmt.Fprint(os.Stderr, usage)
 			return nil
+		case "--continue", "-c":
+			if i+1 < len(args) {
+				i++
+				continueMsg = args[i]
+			}
 		default:
-			queryParts = append(queryParts, a)
+			queryParts = append(queryParts, args[i])
 		}
 	}
 
@@ -70,6 +73,20 @@ func run(args []string) error {
 	cfg, err := config.Load()
 	if err != nil {
 		return fmt.Errorf("loading config: %w", err)
+	}
+
+	// Handle --continue: build query from feedback + last known command for context
+	if continueMsg != "" {
+		if cfg.LastCommand != "" {
+			query = fmt.Sprintf("The last command you generated was:\n%s\n\n%s", cfg.LastCommand, continueMsg)
+		} else {
+			query = continueMsg
+		}
+	}
+
+	if query == "" {
+		fmt.Fprint(os.Stderr, usage)
+		os.Exit(1)
 	}
 
 	// Handle --refresh
@@ -115,6 +132,13 @@ func run(args []string) error {
 	if !noSession && result.SessionID != "" {
 		if err := cfg.SaveSessionID(result.SessionID); err != nil {
 			fmt.Fprintf(os.Stderr, "hm: warning: could not save session ID: %v\n", err)
+		}
+	}
+
+	// Persist the generated command for use with --continue
+	if result.Command != "" {
+		if err := cfg.SaveLastCommand(result.Command); err != nil {
+			fmt.Fprintf(os.Stderr, "hm: warning: could not save last command: %v\n", err)
 		}
 	}
 

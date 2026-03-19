@@ -18,6 +18,7 @@ type Config struct {
 	ClipboardCmd string `toml:"clipboard_cmd"`
 	SystemPrompt string `toml:"system_prompt"`
 	SessionID    string `toml:"session_id"`
+	LastCommand  string `toml:"last_command"`
 	path         string `toml:"-"`
 }
 
@@ -55,6 +56,12 @@ func (c *Config) SaveSessionID(id string) error {
 // ClearSessionID removes the stored session ID from config.toml.
 func (c *Config) ClearSessionID() error {
 	c.SessionID = ""
+	return c.write()
+}
+
+// SaveLastCommand persists the last generated command to config.toml.
+func (c *Config) SaveLastCommand(cmd string) error {
+	c.LastCommand = cmd
 	return c.write()
 }
 

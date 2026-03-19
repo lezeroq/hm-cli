@@ -87,6 +87,13 @@ func (m Model) Init() tea.Cmd { return nil }
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
+		if msg.Width < m.termWidth {
+			// Terminal narrowed: old wide lines visually wrap at the new width,
+			// making Bubble Tea's logical-line cursor-up insufficient to erase them.
+			// Clear the screen before re-rendering to avoid overlapping boxes.
+			m.termWidth = msg.Width
+			return m, tea.ClearScreen
+		}
 		m.termWidth = msg.Width
 		return m, nil
 
@@ -187,7 +194,11 @@ func (m Model) View() string {
 		displayCmd = "No command returned — press [e] to refine or [esc] to dismiss"
 	}
 
-	sb.WriteString(boxStyle.Render(displayCmd))
+	width := m.termWidth - 4
+	if width < 20 {
+		width = 20
+	}
+	sb.WriteString(boxStyle.Width(width).Render(displayCmd))
 	sb.WriteString("\n")
 
 	if m.errMsg != "" {
