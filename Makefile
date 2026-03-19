@@ -13,7 +13,8 @@ test:
 install: build
 	mkdir -p $(INSTALL_DIR)
 	cp $(BINARY) $(INSTALL_DIR)/$(BINARY)
-	@echo "Installed to $(INSTALL_DIR)/$(BINARY)"
+	ln -sf $(INSTALL_DIR)/$(BINARY) $(INSTALL_DIR)/hmq
+	@echo "Installed to $(INSTALL_DIR)/$(BINARY) (symlink: $(INSTALL_DIR)/hmq)"
 	@echo "Ensure $(INSTALL_DIR) is in your PATH"
 
 clean:

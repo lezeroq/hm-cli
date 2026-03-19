@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -22,6 +23,7 @@ const usage = `Usage: hm "<query>"
 
 Options:
   --continue, -c     Continue from the last command with feedback
+  --quiet, -q        Copy command to clipboard and print to stdout, no TUI
   --refresh          Clear the Claude session (optionally followed by a query)
   --no-session       Run without session persistence
   --version          Print version and exit
@@ -30,19 +32,25 @@ Options:
 Examples:
   hm "get pods from all namespaces sorted by creation time"
   hm -c "that showed pods with GPU, I only want CPU pods"
+  hm -q "list running containers"
   hm --refresh "list kubernetes contexts"
   hm --no-session "find files larger than 100MB"
 `
 
 func main() {
-	if err := run(os.Args[1:]); err != nil {
+	args := os.Args[1:]
+	// When invoked as "hmq", behave as "hm -q"
+	if filepath.Base(os.Args[0]) == "hmq" {
+		args = append([]string{"-q"}, args...)
+	}
+	if err := run(args); err != nil {
 		fmt.Fprintf(os.Stderr, "hm: %v\n", err)
 		os.Exit(1)
 	}
 }
 
 func run(args []string) error {
-	var doRefresh, noSession bool
+	var doRefresh, noSession, quiet bool
 	var queryParts []string
 	var continueMsg string
 
@@ -52,6 +60,8 @@ func run(args []string) error {
 			doRefresh = true
 		case "--no-session":
 			noSession = true
+		case "--quiet", "-q":
+			quiet = true
 		case "--version":
 			fmt.Printf("hm v%s\n", version)
 			return nil
@@ -110,8 +120,10 @@ func run(args []string) error {
 		sessionID = cfg.SessionID
 	}
 
-	// Pre-TUI progress indicator on stderr
-	fmt.Fprintln(os.Stderr, "Thinking...")
+	// Progress indicator (suppressed in quiet mode)
+	if !quiet {
+		fmt.Fprintln(os.Stderr, "Thinking...")
+	}
 
 	result, callErr := claude.New(cfg.SystemPrompt, sessionID, nil).Ask(query)
 
@@ -140,6 +152,16 @@ func run(args []string) error {
 		if err := cfg.SaveLastCommand(result.Command); err != nil {
 			fmt.Fprintf(os.Stderr, "hm: warning: could not save last command: %v\n", err)
 		}
+	}
+
+	if quiet {
+		// Quiet mode: copy to clipboard and print, no TUI.
+		cmd := result.Command
+		if strings.TrimSpace(cmd) != "" {
+			_ = clipboard.Copy(cfg.ClipboardCmd, cmd)
+		}
+		fmt.Println(cmd)
+		return nil
 	}
 
 	// activeSessionID is updated by the askFn closure on each refine call
