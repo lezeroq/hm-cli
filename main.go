@@ -19,22 +19,26 @@ import (
 // version is injected at build time: go build -ldflags="-X main.version=1.0.0"
 var version = "dev"
 
-const usage = `Usage: hm "<query>"
+const usage = `Usage: hm "<query>"   (for quick examples: hm --examples)
 
 Options:
   --continue, -c     Continue from the last command with feedback
   --quiet, -q        Copy command to clipboard and print to stdout, no TUI
   --refresh          Clear the Claude session (optionally followed by a query)
   --no-session       Run without session persistence
+  --examples         Show short usage examples and exit
   --version          Print version and exit
   --help, -h         Show this help
+`
 
-Examples:
-  hm "get pods from all namespaces sorted by creation time"
-  hm -c "that showed pods with GPU, I only want CPU pods"
-  hm -q "list running containers"
-  hm --refresh "list kubernetes contexts"
-  hm --no-session "find files larger than 100MB"
+const examples = `hm examples:
+
+  hm "get pods from all namespaces sorted by age"
+  hm "find files larger than 100MB in /var"
+  hm -c "that included hidden files, exclude them"   # refine last command
+  hm -q "list docker images sorted by size"          # no TUI, straight to clipboard
+  hm --refresh "list kubernetes contexts"            # start a fresh session
+  hmq "tar the current directory"                    # alias for hm -q
 `
 
 func main() {
@@ -67,6 +71,9 @@ func run(args []string) error {
 			return nil
 		case "--help", "-h":
 			fmt.Fprint(os.Stderr, usage)
+			return nil
+		case "--examples":
+			fmt.Fprint(os.Stderr, examples)
 			return nil
 		case "--continue", "-c":
 			if i+1 < len(args) {
@@ -107,7 +114,7 @@ func run(args []string) error {
 
 	if query == "" {
 		fmt.Fprint(os.Stderr, usage)
-		return fmt.Errorf("no query provided")
+		return nil
 	}
 
 	// Verify claude CLI is available
