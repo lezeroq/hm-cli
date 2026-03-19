@@ -60,12 +60,18 @@ func TestSaveSessionID_PersistsAcrossLoad(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("HOME", dir)
 
-	cfg, _ := config.Load()
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
 	if err := cfg.SaveSessionID("new-session-id"); err != nil {
 		t.Fatalf("SaveSessionID() error = %v", err)
 	}
 
-	cfg2, _ := config.Load()
+	cfg2, err := config.Load()
+	if err != nil {
+		t.Fatalf("Load() after save error = %v", err)
+	}
 	if cfg2.SessionID != "new-session-id" {
 		t.Errorf("SessionID after save = %q, want new-session-id", cfg2.SessionID)
 	}
@@ -75,15 +81,26 @@ func TestClearSessionID_RemovesID(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("HOME", dir)
 
-	cfg, _ := config.Load()
-	cfg.SaveSessionID("some-id")
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if err := cfg.SaveSessionID("some-id"); err != nil {
+		t.Fatalf("SaveSessionID() error = %v", err)
+	}
 
-	cfg2, _ := config.Load()
+	cfg2, err := config.Load()
+	if err != nil {
+		t.Fatalf("Load() after save error = %v", err)
+	}
 	if err := cfg2.ClearSessionID(); err != nil {
 		t.Fatalf("ClearSessionID() error = %v", err)
 	}
 
-	cfg3, _ := config.Load()
+	cfg3, err := config.Load()
+	if err != nil {
+		t.Fatalf("Load() after clear error = %v", err)
+	}
 	if cfg3.SessionID != "" {
 		t.Errorf("SessionID after clear = %q, want empty", cfg3.SessionID)
 	}
@@ -94,16 +111,28 @@ func TestLoad_PreservesOtherFieldsOnSave(t *testing.T) {
 	t.Setenv("HOME", dir)
 
 	cfgDir := filepath.Join(dir, ".config", "hm")
-	os.MkdirAll(cfgDir, 0755)
-	os.WriteFile(filepath.Join(cfgDir, "config.toml"), []byte(`clipboard_cmd = "pbcopy"
+	if err := os.MkdirAll(cfgDir, 0755); err != nil {
+		t.Fatalf("MkdirAll error = %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(cfgDir, "config.toml"), []byte(`clipboard_cmd = "pbcopy"
 system_prompt = "custom"
 session_id = ""
-`), 0644)
+`), 0644); err != nil {
+		t.Fatalf("WriteFile error = %v", err)
+	}
 
-	cfg, _ := config.Load()
-	cfg.SaveSessionID("abc-123")
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if err := cfg.SaveSessionID("abc-123"); err != nil {
+		t.Fatalf("SaveSessionID() error = %v", err)
+	}
 
-	cfg2, _ := config.Load()
+	cfg2, err := config.Load()
+	if err != nil {
+		t.Fatalf("Load() after save error = %v", err)
+	}
 	if cfg2.ClipboardCmd != "pbcopy" {
 		t.Errorf("ClipboardCmd changed after SaveSessionID: got %q", cfg2.ClipboardCmd)
 	}

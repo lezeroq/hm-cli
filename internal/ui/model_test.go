@@ -7,7 +7,6 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"hm/internal/claude"
 	"hm/internal/ui"
 )
 
@@ -105,27 +104,20 @@ func TestModel_EmptyCommand_ViewShowsPlaceholder(t *testing.T) {
 }
 
 func TestModel_AskResult_UpdatesCommand(t *testing.T) {
-	called := false
-	askFn := func(query string) (*claude.Result, error) {
-		called = true
-		return &claude.Result{Command: "kubectl get pods -n my-ns", SessionID: "s2"}, nil
-	}
-	m := ui.New("kubectl get pods -A", askFn)
+	m := ui.New("kubectl get pods -A", nil)
 
-	// Enter refine mode
+	// Enter refine mode and type a follow-up
 	newM, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("e")})
-	// Type follow-up and submit
 	um := newM.(ui.Model)
 	for _, r := range "change namespace to my-ns" {
 		newM, _ = um.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
 		um = newM.(ui.Model)
 	}
-	// We simulate the askResultMsg that the Cmd would produce
+	// Simulate the AskResultMsg that the async Cmd would deliver
 	newM, _ = um.Update(ui.AskResultMsg{Command: "kubectl get pods -n my-ns", SessionID: "s2"})
 	um = newM.(ui.Model)
 
 	if um.Command() != "kubectl get pods -n my-ns" {
 		t.Errorf("Command after refine = %q", um.Command())
 	}
-	_ = called
 }

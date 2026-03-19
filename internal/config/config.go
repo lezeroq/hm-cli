@@ -2,6 +2,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -43,7 +44,6 @@ func Load() (*Config, error) {
 	if _, err := toml.Decode(string(data), cfg); err != nil {
 		return nil, err
 	}
-	cfg.path = path
 	return cfg, nil
 }
 
@@ -66,15 +66,31 @@ func (c *Config) SaveLastCommand(cmd string) error {
 }
 
 func (c *Config) write() error {
-	if err := os.MkdirAll(filepath.Dir(c.path), 0755); err != nil {
+	dir := filepath.Dir(c.path)
+	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
-	f, err := os.Create(c.path)
+	// Write to a temp file then rename for an atomic update — prevents
+	// corruption if the process is interrupted mid-write.
+	tmp, err := os.CreateTemp(dir, "config-*.toml.tmp")
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-	return toml.NewEncoder(f).Encode(c)
+	tmpName := tmp.Name()
+	if encErr := toml.NewEncoder(tmp).Encode(c); encErr != nil {
+		tmp.Close()
+		os.Remove(tmpName)
+		return encErr
+	}
+	if err := tmp.Close(); err != nil {
+		os.Remove(tmpName)
+		return err
+	}
+	if err := os.Rename(tmpName, c.path); err != nil {
+		os.Remove(tmpName)
+		return fmt.Errorf("committing config: %w", err)
+	}
+	return nil
 }
 
 func configPath() (string, error) {

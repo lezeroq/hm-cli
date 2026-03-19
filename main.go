@@ -94,12 +94,7 @@ func run(args []string) error {
 		}
 	}
 
-	if query == "" {
-		fmt.Fprint(os.Stderr, usage)
-		os.Exit(1)
-	}
-
-	// Handle --refresh
+	// Handle --refresh before the empty-query guard: "hm --refresh" alone is valid.
 	if doRefresh {
 		if err := cfg.ClearSessionID(); err != nil {
 			fmt.Fprintf(os.Stderr, "hm: warning: could not clear session ID: %v\n", err)
@@ -110,12 +105,17 @@ func run(args []string) error {
 		}
 	}
 
+	if query == "" {
+		fmt.Fprint(os.Stderr, usage)
+		return fmt.Errorf("no query provided")
+	}
+
 	// Verify claude CLI is available
 	if _, err := exec.LookPath("claude"); err != nil {
 		return fmt.Errorf("claude CLI not found. Install from https://claude.ai/code")
 	}
 
-	sessionID := ""
+	var sessionID string
 	if !noSession {
 		sessionID = cfg.SessionID
 	}
@@ -158,7 +158,9 @@ func run(args []string) error {
 		// Quiet mode: copy to clipboard and print, no TUI.
 		cmd := result.Command
 		if strings.TrimSpace(cmd) != "" {
-			_ = clipboard.Copy(cfg.ClipboardCmd, cmd)
+			if err := clipboard.Copy(cfg.ClipboardCmd, cmd); err != nil {
+				fmt.Fprintf(os.Stderr, "hm: warning: clipboard unavailable: %v\n", err)
+			}
 		}
 		fmt.Println(cmd)
 		return nil
@@ -189,7 +191,10 @@ func run(args []string) error {
 		return fmt.Errorf("TUI error: %w", err)
 	}
 
-	final := finalModel.(ui.Model)
+	final, ok := finalModel.(ui.Model)
+	if !ok {
+		return fmt.Errorf("unexpected model type from TUI: %T", finalModel)
+	}
 	cmd := final.Command()
 
 	// Copy to clipboard if user pressed Enter

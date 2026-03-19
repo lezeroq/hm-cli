@@ -4,6 +4,7 @@ package clipboard
 import (
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 )
 
@@ -22,8 +23,7 @@ func Copy(cmd, text string) error {
 	}
 	// Write text and close pipe synchronously so xclip receives it before we return.
 	if _, err := io.WriteString(stdin, text); err != nil {
-		// best-effort: xclip may have already read and closed
-		_ = err
+		fmt.Fprintf(os.Stderr, "hm: warning: clipboard write failed: %v\n", err)
 	}
 	stdin.Close()
 	go c.Wait() // reap the process when it eventually exits

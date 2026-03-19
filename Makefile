@@ -2,12 +2,15 @@ VERSION     ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo 
 BINARY      := hm
 INSTALL_DIR := $(HOME)/.local/bin
 
-.PHONY: build test install clean
+.PHONY: build test vet install clean
 
 build:
 	go build -ldflags="-X main.version=$(VERSION)" -o $(BINARY) .
 
-test:
+vet:
+	go vet ./...
+
+test: vet
 	go test ./...
 
 install: build

@@ -53,9 +53,14 @@ func (c *Client) Ask(query string) (*Result, error) {
 		args = append(args, "--session-id", c.sessionID)
 	}
 
-	stdout, _, exitCode := c.exec("claude", args)
+	stdout, stderr, exitCode := c.exec("claude", args)
 	if exitCode != 0 {
-		return nil, fmt.Errorf("claude exited with code %d: %s", exitCode, strings.TrimSpace(string(stdout)))
+		// claude writes diagnostics to stderr; fall back to stdout if stderr is empty.
+		msg := strings.TrimSpace(string(stderr))
+		if msg == "" {
+			msg = strings.TrimSpace(string(stdout))
+		}
+		return nil, fmt.Errorf("claude exited with code %d: %s", exitCode, msg)
 	}
 
 	var resp claudeResponse
