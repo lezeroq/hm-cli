@@ -1,3 +1,5 @@
+Antropic now charges money for programatic `claude -p` usage. So the tool is useless. 
+
 # hm
 
 A small Linux terminal helper that turns natural language into shell commands.
